@@ -1,6 +1,8 @@
 # mongo mapnik plugin
 
-This is a bare bones connector to mongodb point data in the form of a mapnik C++ plugin.
+This is a experimental connector to mongodb point data in the form of a mapnik C++ plugin.
+
+It is only a proof of concept at this point.
 
 
 ```xml
