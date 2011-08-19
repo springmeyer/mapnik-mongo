@@ -1,5 +1,3 @@
-//#include <mongo/client/dbclient.h>
-
 #include "mongo_datasource.hpp"
 #include "mongo_featureset.hpp"
 
@@ -27,7 +25,31 @@ mongo_datasource::mongo_datasource(parameters const& params, bool bind)
 void mongo_datasource::bind() const
 {
     if (is_bound_) return;
+
+    /*
+    DBClientConnection c;
+
+    try {
+        c.connect("localhost");
+        std::cout << "connected ok" << std::endl;
+    } catch( DBException &e ) {
+        throw mapnik::datasource_exception("Mongodb Plugin: " + e.toString());
+    } catch (...) {
+        throw mapnik::datasource_exception("Mongodb Plugin: unknown exception - could not connect to localhost"); 
+    }
+    */
     
+    /*
+    
+        string e = c.getLastError();
+        if( !e.empty() ) { 
+            cout << "insert #1 failed: " << e << endl;
+        }
+
+        // make an index with a unique key constraint
+        c.ensureIndex("test.foo", BSON("hello"<<1), true);
+    */
+        
     // every datasource must have some way of reporting its extent
     // in this case we are not actually reading from any data so for fun
     // let's just create a world extent in Mapnik's default srs:
@@ -83,7 +105,7 @@ mapnik::featureset_ptr mongo_datasource::features(mapnik::query const& q) const
     }
       
     // if the query box intersects our world extent then query for features
-    if (extent_.intersects(q.get_bbox()))
+    if (!c.isFailed() && extent_.intersects(q.get_bbox()))
     {
 
         std::ostringstream lookup;

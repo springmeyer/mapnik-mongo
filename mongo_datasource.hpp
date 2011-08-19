@@ -4,6 +4,8 @@
 // mapnik
 #include <mapnik/datasource.hpp>
 
+#include <mongo/client/dbclient.h>
+
 class mongo_datasource : public mapnik::datasource 
 {
    public:
