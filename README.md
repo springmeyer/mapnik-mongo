@@ -4,45 +4,45 @@ This is a experimental connector to mongodb point data in the form of a mapnik C
 
 It is only a proof of concept at this point.
 
+# Setup
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<Map srs="+init=epsg:4326" background-color="white">
-    <Style name="style">
-        <Rule>
-            <PointSymbolizer />
-            <TextSymbolizer name="[key]" face_name="DejaVu Sans Book" size="10" dx="5" dy="5"/>
-        </Rule>
-    </Style>
-    <Layer name="test" srs="+init=epsg:4326">
-        <StyleName>style</StyleName>
-        <Datasource>
-            <Parameter name="type">mongo</Parameter>
-        </Datasource>
-    </Layer>
-</Map>
-```
+1) Install mongodb - you need libmongoclient (c++ lib)
 
-Or used in python like:
+Recommended to install from https://github.com/mongodb/mongo.git
+
+    git clone https://github.com/mongodb/mongo.git
+    cd mongo
+    scons install .
+
+I had to edit a few paths in SConstruct to get it working....
+
+More details at http://www.mongodb.org/pages/viewpage.action?pageId=21266598
+
+2) Start mongodb
+
+In another terminal:
+
+    mkdir db
+    cd db
+    mongod --dbpath .
+
+3) Import a shapefile
+
+In another terminal:
+
+    cd test/
+    python import.py
+
+4) Run test.py
+
+    cd test/
+    python test.py
 
 
-```python
-  from mapnik2 import *
-  m = Map(600,400)
-  m.background = Color('white')
-  s = Style()
-  r = Rule()
-  r.symbols.append(PointSymbolizer())
-  t = TextSymbolizer(Expression("[key]"),"DejaVu Sans Book",10,Color('black'))
-  t.displacement(15,15)
-  r.symbols.append(t)
-  s.rules.append(r)
-  m.append_style('style',s)
-  ds = Datasource(type="mongo")
-  l = Layer('test')
-  l.styles.append('style')
-  l.datasource = ds
-  m.layers.append(l)
-  m.zoom_all()
-  render_to_file(m,'test.png')
-```
+# Trouble
+
+If you get:
+
+    RuntimeError: field not found, expected type 2
+
+It likely means you don't have a proper 2d index created.
