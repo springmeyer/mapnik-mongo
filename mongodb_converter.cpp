@@ -52,7 +52,7 @@ void mongodb_converter::convert_geometry(const mongo::BSONElement &loc, feature_
 
 void mongodb_converter::convert_point(const std::vector<mongo::BSONElement> &coords, feature_ptr feature) {
     std::auto_ptr<geometry_type> point(new geometry_type(mapnik::Point));
-    point->move_to(coords[0].Number(), coords[0].Number());
+    point->move_to(coords[0].Number(), coords[1].Number());
 
     feature->paths().push_back(point);
 }
