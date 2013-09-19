@@ -1,136 +1,190 @@
-#include "mongo_datasource.hpp"
-#include "mongo_featureset.hpp"
+/*****************************************************************************
+ *
+ * This file is part of Mapnik (c++ mapping toolkit)
+ *
+ * Copyright (C) 2011 Artem Pavlenko
+ *               2013 Oleksandr Novychenko
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *****************************************************************************/
 
-using mapnik::datasource;
-using mapnik::parameters;
+#include "mongodb_datasource.hpp"
+#include "mongodb_featureset.hpp"
+#include "connection_manager.hpp"
 
-using namespace mongo;
+// mapnik
+#include <mapnik/debug.hpp>
+#include <mapnik/global.hpp>
+#include <mapnik/boolean.hpp>
+#include <mapnik/sql_utils.hpp>
+#include <mapnik/util/conversions.hpp>
+#include <mapnik/timer.hpp>
+#include <mapnik/value_types.hpp>
 
-DATASOURCE_PLUGIN(mongo_datasource)
+// boost
+#include <boost/algorithm/string.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/make_shared.hpp>
 
-//http://blog.mxunit.org/2010/11/simple-geospatial-queries-with-mongodb.html
+// stl
+#include <string>
+#include <algorithm>
+#include <set>
+#include <sstream>
+#include <iomanip>
 
-mongo_datasource::mongo_datasource(parameters const& params, bool bind)
-   : datasource(params),
-     type_(datasource::Vector),
-     desc_(*params_.get<std::string>("type"), *params_.get<std::string>("encoding","utf-8")),
-     extent_()
-{
-    if (bind)
-    {
-        this->bind();
-    }
+DATASOURCE_PLUGIN(mongodb_datasource)
+
+using boost::shared_ptr;
+using mapnik::attribute_descriptor;
+
+mongodb_datasource::mongodb_datasource(parameters const& params)
+    : datasource(params),
+      desc_(*params.get<std::string>("type"), "utf-8"),
+      creator_(params.get<std::string>("host"),
+               params.get<std::string>("port"),
+               params.get<std::string>("dbname"),
+               params.get<std::string>("collection"),
+               params.get<std::string>("user"),
+               params.get<std::string>("password")),
+      persist_connection_(*params.get<mapnik::boolean>("persist_connection", true)),
+      extent_initialized_(false) {
+    boost::optional<std::string> ext = params.get<std::string>("extent");
+    if (ext && !ext->empty())
+        extent_initialized_ = extent_.from_string(*ext);
+
+    boost::optional<int> initial_size = params.get<int>("initial_size", 1);
+    boost::optional<int> max_size = params.get<int>("max_size", 10);
+
+    ConnectionManager::instance().registerPool(creator_, *initial_size, *max_size);
 }
 
-void mongo_datasource::bind() const
+mongodb_datasource::~mongodb_datasource()
 {
-    if (is_bound_) return;
-
-    /*
-    DBClientConnection c;
-
-    try {
-        c.connect("localhost");
-        std::cout << "connected ok" << std::endl;
-    } catch( DBException &e ) {
-        throw mapnik::datasource_exception("Mongodb Plugin: " + e.toString());
-    } catch (...) {
-        throw mapnik::datasource_exception("Mongodb Plugin: unknown exception - could not connect to localhost"); 
-    }
-    */
-    
-    /*
-    
-        string e = c.getLastError();
-        if( !e.empty() ) { 
-            cout << "insert #1 failed: " << e << endl;
+    if (!persist_connection_) {
+        shared_ptr< Pool<Connection, ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
+        if (pool) {
+            shared_ptr<Connection> conn = pool->borrowObject();
+            if (conn)
+                conn->close();
         }
-
-        // make an index with a unique key constraint
-        c.ensureIndex("test.foo", BSON("hello"<<1), true);
-    */
-        
-    // every datasource must have some way of reporting its extent
-    // in this case we are not actually reading from any data so for fun
-    // let's just create a world extent in Mapnik's default srs:
-    // '+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs' (equivalent to +init=epsg:4326)
-    // see http://spatialreference.org/ref/epsg/4326/ for more details
-    extent_.init(-179.9,-89.9,179.9,89.9);
-    
-    is_bound_ = true;
+    }
 }
 
-mongo_datasource::~mongo_datasource() { }
-
-// This name must match the plugin filename, eg 'mongo.input'
-std::string const mongo_datasource::name_="mongo";
-
-std::string mongo_datasource::name()
-{
-    return name_;
+const char *mongodb_datasource::name() {
+    return "mongodb";
 }
 
-int mongo_datasource::type() const
-{
-    return type_;
+layer_descriptor mongodb_datasource::get_descriptor() const {
+    return desc_;
 }
 
-mapnik::box2d<double> mongo_datasource::envelope() const
+std::string mongodb_datasource::json_bbox(const box2d<double> &env) const
 {
-    if (!is_bound_) bind();
+    std::ostringstream lookup;
+
+    lookup << "{ loc: { \"$geoWithin\": { \"$box\": [ [ "
+           << std::setprecision(16)
+           << env.minx() << ", " << env.miny() << " ], [ "
+           << env.maxx() << ", " << env.maxy() << " ] ] } } }";
+
+    return lookup.str();
+}
+
+featureset_ptr mongodb_datasource::features(const query &q) const {
+    const box2d<double> &box = q.get_bbox();
+
+    shared_ptr< Pool<Connection, ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
+    if (pool) {
+        shared_ptr<Connection> conn = pool->borrowObject();
+
+        if (!conn)
+            return featureset_ptr();
+
+        if (conn && conn->isOK()) {
+            mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+
+            boost::shared_ptr<mongo::DBClientCursor> rs(conn->query(json_bbox(box)));
+            return boost::make_shared<mongodb_featureset>(rs, ctx, desc_.get_encoding());
+        }
+    }
+
+    return featureset_ptr();
+}
+
+featureset_ptr mongodb_datasource::features_at_point(const coord2d &pt, double tol) const {
+    shared_ptr< Pool<Connection, ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
+    if (pool) {
+        shared_ptr<Connection> conn = pool->borrowObject();
+
+        if (!conn)
+            return featureset_ptr();
+
+        if (conn->isOK()) {
+            mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
+
+            box2d<double> box(pt.x - tol, pt.y - tol, pt.x + tol, pt.y + tol);
+            boost::shared_ptr<mongo::DBClientCursor> rs(conn->query(json_bbox(box)));
+            return boost::make_shared<mongodb_featureset>(rs, ctx, desc_.get_encoding());
+        }
+    }
+
+    return featureset_ptr();
+}
+
+box2d<double> mongodb_datasource::envelope() const {
+    if (extent_initialized_)
+        return extent_;
+    else {
+        // a dumb way :-/
+        extent_.init(-180.0, -90.0, 180.0, 90.0);
+        extent_initialized_ = true;
+    }
+
+    // shared_ptr< Pool<Connection, ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
+    // if (pool) {
+    //     shared_ptr<Connection> conn = pool->borrowObject();
+
+    //     if (!conn)
+    //         return extent_;
+
+    //     if (conn->isOK()) {
+    //         // query
+    //     }
+    // }
 
     return extent_;
 }
 
-mapnik::layer_descriptor mongo_datasource::get_descriptor() const
+boost::optional<mapnik::datasource::geometry_t> mongodb_datasource::get_geometry_type() const
 {
-    if (!is_bound_) bind();
-   
-    return desc_;
-}
+    boost::optional<mapnik::datasource::geometry_t> result;
 
-mapnik::featureset_ptr mongo_datasource::features(mapnik::query const& q) const
-{
-    if (!is_bound_) bind();
-    
-    mapnik::box2d<double> const& e = q.get_bbox();
+    shared_ptr< Pool<Connection,ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
+    if (pool) {
+        shared_ptr<Connection> conn = pool->borrowObject();
 
-    DBClientConnection c;
+        if (!conn)
+            return result;
 
-    try {
-        c.connect("localhost");
-        std::cout << "connected ok" << std::endl;
-    } catch( DBException &e ) {
-        throw mapnik::datasource_exception("Mongodb Plugin: could not connect to localhost");
-    }
-      
-    // if the query box intersects our world extent then query for features
-    if (!c.isFailed() && extent_.intersects(q.get_bbox()))
-    {
-
-        std::ostringstream lookup;
-        lookup << "{loc : {'$within' : {'$box' : [["
-          << std::setprecision(16)
-          << e.minx() << "," << e.miny() << "],["
-          << e.maxx() << "," << e.maxy() << "]]}}}";
-        
-        std::clog << "query: " << lookup.str() << "\n";
-
-        boost::shared_ptr<DBClientCursor> rs (c.query("gisdb.world", lookup.str()));
-
-        return mapnik::featureset_ptr(new mongo_featureset(rs, desc_.get_encoding()));
+        if (conn->isOK()) {
+            result.reset(mapnik::datasource::Collection);
+            return result;
+        }
     }
 
-
-    // otherwise return an empty featureset pointer
-    return mapnik::featureset_ptr();
-}
-
-mapnik::featureset_ptr mongo_datasource::features_at_point(mapnik::coord2d const& pt) const
-{
-    if (!is_bound_) bind();
-
-    // features_at_point is rarely used - only by custom applications,
-    // so for this sample plugin let's do nothing...
-    return mapnik::featureset_ptr();
+    return result;
 }

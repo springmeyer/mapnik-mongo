@@ -1,53 +1,86 @@
-#ifndef FILE_DATASOURCE_HPP
-#define FILE_DATASOURCE_HPP
+/*****************************************************************************
+ *
+ * This file is part of Mapnik (c++ mapping toolkit)
+ *
+ * Copyright (C) 2011 Artem Pavlenko
+ *               2013 Oleksandr Novychenko
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *****************************************************************************/
+
+#ifndef MONGODB_DATASOURCE_HPP
+#define MONGODB_DATASOURCE_HPP
 
 // mapnik
 #include <mapnik/datasource.hpp>
+#include <mapnik/params.hpp>
+#include <mapnik/query.hpp>
+#include <mapnik/feature.hpp>
+#include <mapnik/box2d.hpp>
+#include <mapnik/coord.hpp>
+#include <mapnik/feature_layer_desc.hpp>
+#include <mapnik/unicode.hpp>
+#include <mapnik/value_types.hpp>
 
-#include <mongo/client/dbclient.h>
+// boost
+#include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp>
 
-class mongo_datasource : public mapnik::datasource 
-{
-   public:
-      // constructor
-      // arguments must not change
-      mongo_datasource(mapnik::parameters const& params, bool bind=true);
-      
-      // destructor
-      virtual ~mongo_datasource ();
-      
-      // mandatory: type of the plugin, used to match at runtime
-      int type() const;
+// stl
+#include <vector>
+#include <string>
 
-      // mandatory: name of the plugin
-      static std::string name();
+#include "connection_manager.hpp"
 
-      // mandatory: function to query features by box2d
-      // this is called when rendering, specifically in feature_style_processor.hpp
-      mapnik::featureset_ptr features(mapnik::query const& q) const;
+using mapnik::transcoder;
+using mapnik::datasource;
+using mapnik::box2d;
+using mapnik::layer_descriptor;
+using mapnik::featureset_ptr;
+using mapnik::feature_ptr;
+using mapnik::query;
+using mapnik::parameters;
+using mapnik::coord2d;
 
-      // mandatory: function to query features by point (coord2d)
-      // not used by rendering, but available to calling applications
-      mapnik::featureset_ptr features_at_point(mapnik::coord2d const& pt) const;
+class mongodb_datasource : public datasource {
+    const std::string uri_;
+    const std::string username_;
+    const std::string password_;
+    layer_descriptor desc_;
+    ConnectionCreator<Connection> creator_;
+    bool persist_connection_;
+    mutable bool extent_initialized_;
+    mutable mapnik::box2d<double> extent_;
 
-      // mandatory: return the box2d of the datasource
-      // called during rendering to determine if the layer should be processed
-      mapnik::box2d<double> envelope() const;
-      
-      // mandatory: return the layer descriptor
-      mapnik::layer_descriptor get_descriptor() const;
-      
-      // mandatory: whether to bind the datasource or delay
-      void bind() const;
+    std::string json_bbox(const box2d<double> &env) const;
 
-   private:
-      // recommended naming convention of datasource members:
-      // name_, type_, extent_, and desc_
-      static const std::string name_;
-      int type_;
-      mutable mapnik::layer_descriptor desc_;
-      mutable mapnik::box2d<double> extent_;
+public:
+    mongodb_datasource(const parameters &params);
+    ~mongodb_datasource();
+
+    static const char *name();
+    mapnik::datasource::datasource_t type() const;
+    layer_descriptor get_descriptor() const;
+
+    featureset_ptr features(const query &q) const;
+    featureset_ptr features_at_point(coord2d const &pt, double tol = 0) const;
+    mapnik::box2d<double> envelope() const;
+
+    boost::optional<mapnik::datasource::geometry_t> get_geometry_type() const;
 };
 
-
-#endif // FILE_DATASOURCE_HPP
+#endif // MONGODB_DATASOURCE_HPP

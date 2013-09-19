@@ -1,54 +1,118 @@
-#include "mongo_featureset.hpp"
-#include <mapnik/geometry.hpp>
+/*****************************************************************************
+ *
+ * This file is part of Mapnik (c++ mapping toolkit)
+ *
+ * Copyright (C) 2011 Artem Pavlenko
+ *               2013 Oleksandr Novychenko
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+ *
+ *****************************************************************************/
 
-using namespace mongo;
 
-mongo_featureset::mongo_featureset(boost::shared_ptr<mongo::DBClientCursor> rs, std::string const& encoding)
-  : count_(0),
-    rs_(rs),
-    tr_(new mapnik::transcoder(encoding)) { }
+// mapnik
+#include <mapnik/global.hpp>
+#include <mapnik/debug.hpp>
+#include <mapnik/wkb.hpp>
+#include <mapnik/unicode.hpp>
+#include <mapnik/value_types.hpp>
+#include <mapnik/feature_factory.hpp>
+#include <mapnik/util/conversions.hpp>
+#include <mapnik/util/trim.hpp>
+#include <mapnik/global.hpp> // for int2net
 
-mongo_featureset::~mongo_featureset() { }
 
-mapnik::feature_ptr mongo_featureset::next()
-{
-    if (rs_->more())
-    {
+// boost
+#include <boost/cstdint.hpp> // for boost::int16_t
+#include <boost/scoped_array.hpp>
 
-        // create a new feature
-        mapnik::feature_ptr feature(new mapnik::Feature(count_));
+#include <boost/shared_ptr.hpp>
+#include <boost/scoped_ptr.hpp> // needed for wrapping the transcoder
 
-        // http://api.mongodb.org/cplusplus/1.7.5-pre-/index.html
-        // http://www.mongodb.org/pages/viewpage.action?pageId=133409
-        // https://github.com/mongodb/mongo/blob/master/bson/bsondemo/bsondemo.cpp
-        BSONObj p = rs_->next();
-        BSONElement loc = p["loc"];
+// stl
+#include <sstream>
+#include <string>
 
-        // create an attribute pair of key:value
-        UnicodeString ustr = tr_->transcode(p["name"].String().c_str());
-        boost::put(*feature,"key",ustr);
-        
-        // create a new point geometry
-        mapnik::geometry_type * pt = new mapnik::geometry_type(mapnik::Point);
-        
-        // we use path type geometries in Mapnik to fit nicely with AGG and Cairo
-        // here we stick an x,y pair into the geometry using move_to()
-        vector<BSONElement> v = loc.Array();
-        double x = v[0].Number();
-        double y = v[1].Number();
-        pt->move_to(x,y);
-        
-        // add the geometry to the feature
-        feature->add_geometry(pt);
-        
-        // increment to count so that we only return one feature
-        ++count_;
-        
-        // return the feature!
-        return feature;
-    }
-    
-    // otherwise return an empty feature_ptr
-    return mapnik::feature_ptr();
+#include "mongodb_featureset.hpp"
+#include "mongodb_converter.hpp"
+
+using mapnik::geometry_type;
+using mapnik::byte;
+using mapnik::geometry_utils;
+using mapnik::feature_factory;
+using mapnik::context_ptr;
+
+mongodb_featureset::mongodb_featureset(const boost::shared_ptr<mongo::DBClientCursor> &rs,
+                                       const context_ptr &ctx,
+                                       const std::string &encoding)
+    : rs_(rs),
+      ctx_(ctx),
+      tr_(new transcoder(encoding)),
+      feature_id_(0) {
 }
 
+mongodb_featureset::~mongodb_featureset() {
+}
+
+feature_ptr mongodb_featureset::next() {
+    while (rs_->more()) {
+        mapnik::feature_ptr feature(new mapnik::Feature(ctx_, feature_id_));
+        mongo::BSONObj bson;
+
+        try {
+            bson = rs_->nextSafe();
+            mongodb_converter::convert_geometry(bson["loc"], feature);
+
+            for (mongo::BSONObjIterator i = bson.begin(); i.more(); ) {
+                mongo::BSONElement e = i.next();
+                std::string name(e.fieldName());
+
+                if (name == "_id" || name == "loc") // ignore _id's and already parsed loc's
+                    continue;
+
+                switch (e.type()) {
+                case mongo::String:
+                    feature->put(name, tr_->transcode(e.String().c_str()));
+                    break;
+
+                case mongo::NumberDouble:
+                    feature->put(name, e.Double());
+                    break;
+
+                case mongo::NumberLong:
+                    feature->put<mapnik::value_integer>(name, e.Long());
+                    break;
+
+                case mongo::NumberInt:
+                    feature->put<mapnik::value_integer>(name, e.Int());
+                    break;
+
+                default:
+                    break;
+                }
+            }
+        } catch(mongo::DBException &de) {
+            std::string err_msg = "Mongodb Plugin: ";
+            err_msg += de.toString();
+            err_msg += "\n";
+            throw mapnik::datasource_exception(err_msg);
+        }
+
+        ++feature_id_;
+        return feature;
+    }
+
+    return feature_ptr();
+}

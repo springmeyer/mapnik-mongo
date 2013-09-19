@@ -1,4 +1,3 @@
-
 /*****************************************************************************
  *
  * This file is part of Mapnik (c++ mapping toolkit)
@@ -22,40 +21,25 @@
  *
  *****************************************************************************/
 
-#ifndef MONGODB_FEATURESET_HPP
-#define MONGODB_FEATURESET_HPP
+#ifndef MONGODB_CONVERTER_HPP
+#define MONGODB_CONVERTER_HPP
 
 // mapnik
-#include <mapnik/box2d.hpp>
 #include <mapnik/datasource.hpp>
-#include <mapnik/feature.hpp>
-#include <mapnik/unicode.hpp>
 
 // mongo
 #include <mongo/client/dbclientcursor.h>
 
-// boost
-#include <boost/scoped_ptr.hpp>
+// std
+#include <vector>
 
-using mapnik::Featureset;
-using mapnik::box2d;
-using mapnik::feature_ptr;
-using mapnik::transcoder;
-using mapnik::context_ptr;
-
-class mongodb_featureset : public mapnik::Featureset {
-    boost::shared_ptr<mongo::DBClientCursor> rs_;
-    context_ptr ctx_;
-    boost::scoped_ptr<mapnik::transcoder> tr_;
-    mapnik::value_integer feature_id_;
-
+class mongodb_converter {
 public:
-    mongodb_featureset(const boost::shared_ptr<mongo::DBClientCursor> &rs,
-                       const context_ptr &ctx,
-                       const std::string &encoding);
-    ~mongodb_featureset();
+    static void convert_geometry(const mongo::BSONElement &loc, mapnik::feature_ptr feature);
 
-    feature_ptr next();
+    static void convert_point(const std::vector<mongo::BSONElement> &coords, mapnik::feature_ptr feature);
+    static void convert_linestring(const std::vector<mongo::BSONElement> &coords, mapnik::feature_ptr feature);
+    static void convert_polygon(const std::vector<mongo::BSONElement> &coords, mapnik::feature_ptr feature);
 };
 
-#endif // MONGODB_FEATURESET_HPP
+#endif // MONGODB_CONVERTER_HPP
