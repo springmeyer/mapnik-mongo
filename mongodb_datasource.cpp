@@ -63,6 +63,8 @@ mongodb_datasource::mongodb_datasource(parameters const& params)
                params.get<std::string>("password")),
       persist_connection_(*params.get<mapnik::boolean>("persist_connection", true)),
       extent_initialized_(false) {
+    if (!params.get<std::string>("collection"))
+        throw mapnik::datasource_exception("MongoDB Plugin: missing <collection> parameter");
     boost::optional<std::string> ext = params.get<std::string>("extent");
     if (ext && !ext->empty())
         extent_initialized_ = extent_.from_string(*ext);
