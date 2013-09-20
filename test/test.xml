@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Map bgcolor="#f2efe9" srs="+proj=latlong +datum=WGS84">
+<Map background-color="#ccc" srs="+proj=latlong +datum=WGS84">
     <FontSet name="book-fonts">
         <Font face-name="DejaVu Sans Book" />
     </FontSet>
@@ -11,12 +11,7 @@
     <Style name="lines_style">
         <Rule>
             <!--Filter>[highway] &lt;&gt; ''</Filter-->
-            <LineSymbolizer>
-                <CssParameter name="stroke">#808080</CssParameter>
-                <CssParameter name="stroke-width">2</CssParameter>
-                <CssParameter name="stroke-linejoin">round</CssParameter>
-                <CssParameter name="stroke-linecap">round</CssParameter>
-            </LineSymbolizer>
+            <LineSymbolizer stroke="#808080" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
         </Rule>
         <Rule>
             <!--Filter>[highway] &lt;&gt; ''</Filter-->
@@ -25,7 +20,9 @@
         </Rule>
     </Style>
     <Style name="polys_style">
-        <PolygonSymbolizer gamma=".65" fill="#bbbbbb"/>
+        <Rule>
+            <PolygonSymbolizer gamma=".65" fill="#bbbbbb" />
+        </Rule>
     </Style>
     <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
         <StyleName>pointss_style</StyleName>
