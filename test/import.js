@@ -40,7 +40,7 @@ function importShp(name, collection) {
 
     (function next(feature) {
         if (!feature) {
-            if (++nReady === 3) {
+            if (++nReady === 3) { // stupidly async chains counting :-)
                 console.log("done...");
                 connector.close();
             }
@@ -48,7 +48,16 @@ function importShp(name, collection) {
             return;
         }
 
-        collection.insert(JSON.parse(feature.toJSON()), function(err) {
+        var json = JSON.parse(feature.toJSON()), geom = json.geometry;
+        if (geom.type === "MultiPolygon") {
+            geom.type = "Polygon";
+            geom.coordinates = geom.coordinates.map(function(pol) { return pol[0]; });
+        }
+
+        if (geom.type === "Polygon")
+            geom.coordinates.forEach(function(pol) { pol.splice(-1, 1); });
+
+        collection.insert(json, function(err) {
             if (err) {
                 connector.close();
                 return console.log("inserting error:", err.message);
