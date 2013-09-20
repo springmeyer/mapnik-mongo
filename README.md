@@ -1,8 +1,7 @@
 # mongo mapnik plugin
 
-This is a experimental connector to mongodb point data in the form of a mapnik C++ plugin.
-
-It is only a proof of concept at this point.
+This is a experimental connector to MongoDB data in the form of a Mapnik C++ plugin.
+MongoDB supports a Point, a LineString and a Polygon geometries since version 2.4.
 
 # Setup
 
