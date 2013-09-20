@@ -99,7 +99,7 @@ layer_descriptor mongodb_datasource::get_descriptor() const {
 std::string mongodb_datasource::json_bbox(const box2d<double> &env) const {
     std::ostringstream lookup;
 
-    lookup << "{ loc: { \"$geoWithin\": { \"$box\": [ [ "
+    lookup << "{ geometry: { \"$geoWithin\": { \"$box\": [ [ "
            << std::setprecision(16)
            << env.minx() << ", " << env.miny() << " ], [ "
            << env.maxx() << ", " << env.maxy() << " ] ] } } }";
@@ -183,11 +183,11 @@ boost::optional<mapnik::datasource::geometry_t> mongodb_datasource::get_geometry
             return result;
 
         if (conn->isOK()) {
-            boost::shared_ptr <mongo::DBClientCursor> rs(conn->query("{ loc: { \"$exists\": true } }", 1));
+            boost::shared_ptr <mongo::DBClientCursor> rs(conn->query("{ geometry: { \"$exists\": true } }", 1));
             try {
                 if (rs->more()) {
                     mongo::BSONObj bson = rs->next();
-                    std::string type = bson["loc"]["type"].String();
+                    std::string type = bson["geometry"]["type"].String();
 
                     if (type == "Point")
                         result.reset(mapnik::datasource::Point);

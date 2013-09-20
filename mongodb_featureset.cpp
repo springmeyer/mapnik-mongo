@@ -73,14 +73,11 @@ feature_ptr mongodb_featureset::next() {
 
         try {
             bson = rs_->nextSafe();
-            mongodb_converter::convert_geometry(bson["loc"], feature);
+            mongodb_converter::convert_geometry(bson["geometry"], feature);
 
-            for (mongo::BSONObjIterator i = bson.begin(); i.more(); ) {
+            for (mongo::BSONObjIterator i = bson["properties"].wrap().begin(); i.more(); ) {
                 mongo::BSONElement e = i.next();
                 std::string name(e.fieldName());
-
-                if (name == "_id" || name == "loc") // ignore _id's and already parsed loc's
-                    continue;
 
                 switch (e.type()) {
                 case mongo::String:

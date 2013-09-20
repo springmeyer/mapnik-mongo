@@ -19,7 +19,7 @@ connector.open(function(err, db) {
                 return console.log("collection selecting error:", err.message);
             }
 
-            collection.ensureIndex({ loc: "2dsphere" }, function(err) {
+            collection.ensureIndex({ geometry: "2dsphere" }, function(err) {
                 if (err) {
                     connector.close();
                     return console.log("collection selecting error:", err.message);
@@ -48,8 +48,13 @@ function importShp(name, collection) {
             return;
         }
 
-        var json = JSON.parse(feature.toJSON()), doc = json.properties;
-        doc.loc = json.geometry;
-        collection.insert(doc, function(err) { next(featureSet.next()); });
+        collection.insert(JSON.parse(feature.toJSON()), function(err) {
+            if (err) {
+                connector.close();
+                return console.log("inserting error:", err.message);
+            }
+
+            next(featureSet.next());
+        });
     })(featureSet.next());
 }
