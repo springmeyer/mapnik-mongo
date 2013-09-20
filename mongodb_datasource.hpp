@@ -61,6 +61,7 @@ class mongodb_datasource : public datasource {
     const std::string username_;
     const std::string password_;
     layer_descriptor desc_;
+    mapnik::datasource::datasource_t type_;
     ConnectionCreator<Connection> creator_;
     bool persist_connection_;
     mutable bool extent_initialized_;

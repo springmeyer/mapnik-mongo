@@ -54,6 +54,7 @@ using mapnik::attribute_descriptor;
 mongodb_datasource::mongodb_datasource(parameters const& params)
     : datasource(params),
       desc_(*params.get<std::string>("type"), "utf-8"),
+      type_(datasource::Vector),
       creator_(params.get<std::string>("host"),
                params.get<std::string>("port"),
                params.get<std::string>("dbname"),
@@ -72,8 +73,7 @@ mongodb_datasource::mongodb_datasource(parameters const& params)
     ConnectionManager::instance().registerPool(creator_, *initial_size, *max_size);
 }
 
-mongodb_datasource::~mongodb_datasource()
-{
+mongodb_datasource::~mongodb_datasource() {
     if (!persist_connection_) {
         shared_ptr< Pool<Connection, ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
         if (pool) {
@@ -88,12 +88,15 @@ const char *mongodb_datasource::name() {
     return "mongodb";
 }
 
+mapnik::datasource::datasource_t mongodb_datasource::type() const {
+    return type_;
+}
+
 layer_descriptor mongodb_datasource::get_descriptor() const {
     return desc_;
 }
 
-std::string mongodb_datasource::json_bbox(const box2d<double> &env) const
-{
+std::string mongodb_datasource::json_bbox(const box2d<double> &env) const {
     std::ostringstream lookup;
 
     lookup << "{ loc: { \"$geoWithin\": { \"$box\": [ [ "
@@ -169,8 +172,7 @@ box2d<double> mongodb_datasource::envelope() const {
     return extent_;
 }
 
-boost::optional<mapnik::datasource::geometry_t> mongodb_datasource::get_geometry_type() const
-{
+boost::optional<mapnik::datasource::geometry_t> mongodb_datasource::get_geometry_type() const {
     boost::optional<mapnik::datasource::geometry_t> result;
 
     shared_ptr< Pool<Connection,ConnectionCreator> > pool = ConnectionManager::instance().getPool(creator_.id());
