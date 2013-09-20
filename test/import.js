@@ -54,7 +54,7 @@ function importShp(name, collection) {
             geom.coordinates = geom.coordinates.map(function(pol) { return pol[0]; });
         }
 
-        if (geom.type === "Polygon")
+        if (geom.type === "Polygon") // workaround to remove the last [ 0, 0 ]
             geom.coordinates.forEach(function(pol) { pol.splice(-1, 1); });
 
         collection.insert(json, function(err) {
