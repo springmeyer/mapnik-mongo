@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map bgcolor="#f2efe9" srs="+proj=latlong +datum=WGS84">
+    <FontSet name="book-fonts">
+        <Font face-name="DejaVu Sans Book" />
+    </FontSet>
+    <Style name="points_style">
+        <Rule>
+            <MarkersSymbolizer fill="darkgreen" opacity=".7" width="1.5" stroke="lightgreen" stroke-width="3.5" stroke-opacity=".1" placement="point" marker-type="ellipse" allow-overlap="true"/>
+        </Rule>
+    </Style>
+    <Style name="lines_style">
+        <Rule>
+            <!--Filter>[highway] &lt;&gt; ''</Filter-->
+            <LineSymbolizer>
+                <CssParameter name="stroke">#808080</CssParameter>
+                <CssParameter name="stroke-width">2</CssParameter>
+                <CssParameter name="stroke-linejoin">round</CssParameter>
+                <CssParameter name="stroke-linecap">round</CssParameter>
+            </LineSymbolizer>
+        </Rule>
+        <Rule>
+            <!--Filter>[highway] &lt;&gt; ''</Filter-->
+            <TextSymbolizer fontset-name="book-fonts"
+                size="9" fill="#000" halo-radius="1" placement="line" />
+        </Rule>
+    </Style>
+    <Style name="polys_style">
+        <PolygonSymbolizer gamma=".65" fill="#bbbbbb"/>
+    </Style>
+    <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
+        <StyleName>pointss_style</StyleName>
+        <Datasource>
+            <Parameter name="type">mongodb</Parameter>
+            <Parameter name="collection">points</Parameter>
+        </Datasource>
+    </Layer>
+    <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
+        <StyleName>lines_style</StyleName>
+        <Datasource>
+            <Parameter name="type">mongodb</Parameter>
+            <Parameter name="collection">linestrings</Parameter>
+        </Datasource>
+    </Layer>
+    <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
+        <StyleName>polys_style</StyleName>
+        <Datasource>
+            <Parameter name="type">mongodb</Parameter>
+            <Parameter name="collection">polygons</Parameter>
+        </Datasource>
+    </Layer>
+</Map>
