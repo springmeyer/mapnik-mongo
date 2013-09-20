@@ -1,6 +1,6 @@
 "use strict";
 
-var path = require("path"), fs = require("fs");
+var path = require("path");
 var mapnik = require("mapnik"), mongodb = require("mongodb");
 
 var server = new mongodb.Server("localhost", 27017),
