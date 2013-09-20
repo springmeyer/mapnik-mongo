@@ -25,17 +25,20 @@ In another terminal:
     cd db
     mongod --dbpath .
 
-3) Import a shapefile
+3) Prepare test environment
+
+    cd test/
+    npm install mongodb mapnik
+
+4) Import a shapefile
 
 In another terminal:
 
-    cd test/
-    python import.py
+    node import.js
 
-4) Run test.py
+5) Run test.js
 
-    cd test/
-    python test.py
+    node test.js
 
 
 # Trouble
