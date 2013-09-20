@@ -183,8 +183,25 @@ boost::optional<mapnik::datasource::geometry_t> mongodb_datasource::get_geometry
             return result;
 
         if (conn->isOK()) {
-            result.reset(mapnik::datasource::Collection);
-            return result;
+            boost::shared_ptr <mongo::DBClientCursor> rs(conn->query("{ loc: { \"$exists\": true } }", 1));
+            try {
+                if (rs->more()) {
+                    mongo::BSONObj bson = rs->next();
+                    std::string type = bson["loc"]["type"].String();
+
+                    if (type == "Point")
+                        result.reset(mapnik::datasource::Point);
+                    else if (type == "LineString")
+                        result.reset(mapnik::datasource::LineString);
+                    else if (type == "Polygon")
+                        result.reset(mapnik::datasource::Polygon);
+                }
+            } catch(mongo::DBException &de) {
+                std::string err_msg = "Mongodb Plugin: ";
+                err_msg += de.toString();
+                err_msg += "\n";
+                throw mapnik::datasource_exception(err_msg);
+            }
         }
     }
 
