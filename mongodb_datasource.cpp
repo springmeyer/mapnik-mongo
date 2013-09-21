@@ -101,6 +101,10 @@ layer_descriptor mongodb_datasource::get_descriptor() const {
 std::string mongodb_datasource::json_bbox(const box2d<double> &env) const {
     std::ostringstream lookup;
 
+    if (abs(env.maxx() - env.minx()) > 180 ||
+        abs(env.maxy() - env.miny()) > 90)
+        throw mapnik::datasource_exception("try qo query more than a single hemisphere");
+
     lookup << "{ geometry: { \"$geoIntersects\": { \"$geometry\": { type: \"Polygon\", coordinates: [ [ [ "
            << std::setprecision(16)
            << env.minx() << ", " << env.miny() << " ], [ "
