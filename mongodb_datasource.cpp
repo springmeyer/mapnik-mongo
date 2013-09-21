@@ -101,10 +101,13 @@ layer_descriptor mongodb_datasource::get_descriptor() const {
 std::string mongodb_datasource::json_bbox(const box2d<double> &env) const {
     std::ostringstream lookup;
 
-    lookup << "{ geometry: { \"$geoWithin\": { \"$box\": [ [ "
+    lookup << "{ geometry: { \"$geoWithin\": { \"$geometry\": { type: \"Polygon\", coordinates: [ [ [ "
            << std::setprecision(16)
            << env.minx() << ", " << env.miny() << " ], [ "
-           << env.maxx() << ", " << env.maxy() << " ] ] } } }";
+           << env.maxx() << ", " << env.miny() << " ], [ "
+           << env.maxx() << ", " << env.maxy() << " ], [ "
+           << env.minx() << ", " << env.maxy() << " ], [ "
+           << env.minx() << ", " << env.miny() << " ] ] ] } } } }";
 
     return lookup.str();
 }
@@ -122,6 +125,8 @@ featureset_ptr mongodb_datasource::features(const query &q) const {
         if (conn && conn->isOK()) {
             mapnik::context_ptr ctx = boost::make_shared<mapnik::context_type>();
 
+
+            std::cout << "bbox: " << json_bbox(box) << std::endl;
             boost::shared_ptr<mongo::DBClientCursor> rs(conn->query(json_bbox(box)));
             return boost::make_shared<mongodb_featureset>(rs, ctx, desc_.get_encoding());
         }
