@@ -72,34 +72,41 @@ feature_ptr mongodb_featureset::next() {
         mongo::BSONObj bson;
 
         try {
-            bson = rs_->nextSafe();
+            mongo::BSONObj bson = rs_->nextSafe();
+            mongo::BSONElement geom = bson["geometry"];
+            mongo::BSONElement prop = bson["properties"];
+
+            if (geom.type() != mongo::Object)
+                continue;
+
             mongodb_converter::convert_geometry(bson["geometry"], feature);
 
-            for (mongo::BSONObjIterator i = bson["properties"].wrap().begin(); i.more(); ) {
-                mongo::BSONElement e = i.next();
-                std::string name(e.fieldName());
+            if (prop.type() == mongo::Object)
+                for (mongo::BSONObjIterator i = prop.wrap().begin(); i.more(); ) {
+                    mongo::BSONElement e = i.next();
+                    std::string name(e.fieldName());
 
-                switch (e.type()) {
-                case mongo::String:
-                    feature->put(name, tr_->transcode(e.String().c_str()));
-                    break;
+                    switch (e.type()) {
+                    case mongo::String:
+                        feature->put(name, tr_->transcode(e.String().c_str()));
+                        break;
 
-                case mongo::NumberDouble:
-                    feature->put(name, e.Double());
-                    break;
+                    case mongo::NumberDouble:
+                        feature->put(name, e.Double());
+                        break;
 
-                case mongo::NumberLong:
-                    feature->put<mapnik::value_integer>(name, e.Long());
-                    break;
+                    case mongo::NumberLong:
+                        feature->put<mapnik::value_integer>(name, e.Long());
+                        break;
 
-                case mongo::NumberInt:
-                    feature->put<mapnik::value_integer>(name, e.Int());
-                    break;
+                    case mongo::NumberInt:
+                        feature->put<mapnik::value_integer>(name, e.Int());
+                        break;
 
-                default:
-                    break;
+                    default:
+                        break;
+                    }
                 }
-            }
         } catch(mongo::DBException &de) {
             std::string err_msg = "Mongodb Plugin: ";
             err_msg += de.toString();
