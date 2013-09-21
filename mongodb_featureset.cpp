@@ -81,28 +81,29 @@ feature_ptr mongodb_featureset::next() {
             mongodb_converter::convert_geometry(bson["geometry"], feature);
 
             if (prop.type() == mongo::Object)
-                for (mongo::BSONObjIterator i = prop.wrap().begin(); i.more(); ) {
+                for (mongo::BSONObjIterator i = prop.Obj().begin(); i.more(); ) {
                     mongo::BSONElement e = i.next();
                     std::string name(e.fieldName());
 
                     switch (e.type()) {
                     case mongo::String:
-                        feature->put(name, tr_->transcode(e.String().c_str()));
+                        feature->put_new(name, tr_->transcode(e.String().c_str()));
                         break;
 
                     case mongo::NumberDouble:
-                        feature->put(name, e.Double());
+                        feature->put_new(name, e.Double());
                         break;
 
                     case mongo::NumberLong:
-                        feature->put<mapnik::value_integer>(name, e.Long());
+                        feature->put_new<mapnik::value_integer>(name, e.Long());
                         break;
 
                     case mongo::NumberInt:
-                        feature->put<mapnik::value_integer>(name, e.Int());
+                        feature->put_new<mapnik::value_integer>(name, e.Int());
                         break;
 
                     default:
+                        std::cout << "ignored" << std::endl;
                         break;
                     }
                 }
