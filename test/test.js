@@ -26,7 +26,6 @@ map.load("test.xml", function(err, map) {
 
 function render(conf, callback) {
     map.zoomToBox(conf.extent);
-    console.log("extent:", map.extent, conf.extent);
 
     var img = new mapnik.Image(512, 256);
     map.render(img, function(err, img) {
