@@ -13,7 +13,7 @@ var conf = [
     { extent: [    0, -90, 180,   0 ], file: "4.png" }
 ];
 
-var map = new mapnik.Map(256, 256);
+var map = new mapnik.Map(512, 256);
 map.load("test.xml", function(err, map) {
     if (err)
         return console.log("style load error:", err.message);
@@ -26,8 +26,9 @@ map.load("test.xml", function(err, map) {
 
 function render(conf, callback) {
     map.zoomToBox(conf.extent);
+    console.log("extent:", map.extent, conf.extent);
 
-    var img = new mapnik.Image(256, 256);
+    var img = new mapnik.Image(512, 256);
     map.render(img, function(err, img) {
         if (err)
             return console.log("rendering error:", err.message);
