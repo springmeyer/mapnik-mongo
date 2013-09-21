@@ -69,7 +69,6 @@ mongodb_featureset::~mongodb_featureset() {
 feature_ptr mongodb_featureset::next() {
     while (rs_->more()) {
         mapnik::feature_ptr feature(new mapnik::Feature(ctx_, feature_id_));
-        mongo::BSONObj bson;
 
         try {
             mongo::BSONObj bson = rs_->nextSafe();
