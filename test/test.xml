@@ -24,21 +24,21 @@
             <PolygonSymbolizer gamma=".65" fill="#bbbbbb" />
         </Rule>
     </Style>
-    <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
-        <StyleName>pointss_style</StyleName>
+    <Layer name="points_layer" status="on" srs="+proj=latlong +datum=WGS84">
+        <StyleName>points_style</StyleName>
         <Datasource>
             <Parameter name="type">mongodb</Parameter>
             <Parameter name="collection">points</Parameter>
         </Datasource>
     </Layer>
-    <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
+    <Layer name="lines_layer" status="on" srs="+proj=latlong +datum=WGS84">
         <StyleName>lines_style</StyleName>
         <Datasource>
             <Parameter name="type">mongodb</Parameter>
             <Parameter name="collection">linestrings</Parameter>
         </Datasource>
     </Layer>
-    <Layer name="linestrings" status="on" srs="+proj=latlong +datum=WGS84">
+    <Layer name="polys_layer" status="on" srs="+proj=latlong +datum=WGS84">
         <StyleName>polys_style</StyleName>
         <Datasource>
             <Parameter name="type">mongodb</Parameter>
