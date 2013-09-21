@@ -42,7 +42,6 @@ Render result for [test/test.js](https://github.com/hamer/mapnik-mongo/blob/mast
 
 ![ScreenShot](https://raw.github.com/hamer/mapnik-mongo/master/test/1.png)
 
-Yes, point in the center of the map (lower-right corner on the image) is an accident of my experiments :-)
 # Setup
 
 1) Install MongoDB with C++ driver (libmongoclient)

@@ -7,21 +7,24 @@
         <Rule>
             <MarkersSymbolizer fill="darkgreen" opacity=".7" width="5.5" stroke="lightgreen" stroke-width="3.5" stroke-opacity=".1" placement="point" marker-type="ellipse" allow-overlap="true"/>
         </Rule>
+        <Rule>
+            <TextSymbolizer fontset-name="book-fonts" size="11" fill="black" placement="point" dy="6">[name]</TextSymbolizer>
+        </Rule>
     </Style>
     <Style name="lines_style">
         <Rule>
-            <!--Filter>[highway] &lt;&gt; ''</Filter-->
             <LineSymbolizer stroke="#808080" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
         </Rule>
         <Rule>
-            <!--Filter>[highway] &lt;&gt; ''</Filter-->
-            <TextSymbolizer fontset-name="book-fonts"
-                size="9" fill="#000" halo-radius="1" placement="line" />
+            <TextSymbolizer fontset-name="book-fonts" size="11" fill="black" placement="line" dy="6">[name]</TextSymbolizer>
         </Rule>
     </Style>
     <Style name="polys_style">
         <Rule>
             <PolygonSymbolizer gamma=".65" fill="#bbbbbb" />
+        </Rule>
+        <Rule>
+            <TextSymbolizer fontset-name="book-fonts" size="11" fill="black" placement="point" dy="6">[name]</TextSymbolizer>
         </Rule>
     </Style>
     <Layer name="points_layer" status="on" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
