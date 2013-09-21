@@ -17,6 +17,24 @@ Example in XML:
         <Parameter name="type">mongodb</Parameter>
         <Parameter name="collection">polygons</Parameter>
     </Datasource>
+    
+Records in the database should have a "geometry" property with GeoJSON geometry (only Point, LineString and Polygon are supported), and a "properties" property, which contains an information about feature.
+
+Example:
+
+    {
+        geometry: {
+            type: "LineString",
+            coordinates: [ [ lng1, lat1 ], [ lng2, lat2 ], ... ]
+        },
+        properties: {
+            name: "Long Hard Road",
+            id: 32167,
+            ...
+        }
+    }
+    
+CAUTION: notice the Longitude, Latitude order.
 
 # Demo
 
