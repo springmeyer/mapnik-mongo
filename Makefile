@@ -1,17 +1,19 @@
-CXX=g++
-MONGO_SOURCES=/Users/dane/projects
-CXXFLAGS=-I$(MONGO_SOURCES) $(shell mapnik-config --cflags)
-LDFLAGS=-L$(MONGO_SOURCES)/mongo $(shell mapnik-config --libs)
+PLUGIN = mongodb.input
+CXX = g++
 
-PLUGIN=mongo
-OBJS=$(PLUGIN)_datasource.o $(PLUGIN)_featureset.o
+CXXFLAGS = $(shell mapnik-config --cflags) -fPIC
+LDFLAGS = -shared $(shell mapnik-config --libs) -lmongoclient -lboost_thread-mt -lboost_filesystem -lboost_system
 
-$(PLUGIN).input:	$(OBJS)
-	$(CXX) -dynamiclib $(LDFLAGS) -g -lmongoclient -undefined dynamic_lookup $(OBJS) -o $(PLUGIN).input
+SOURCES := $(wildcard *.cpp)
+OBJS := $(patsubst %.cpp, %.o, $(SOURCES))
+
+all: $(PLUGIN)
+
+$(PLUGIN): $(OBJS)
+	$(CXX) $(OBJS) $(LDFLAGS) -o $@
+
+%.o: %.cpp
+	$(CXX) -c $< $(CXXFLAGS) -o $@
 
 clean:
-	rm -f $(PLUGIN).input
-	rm -f $(OBJS)
-
-$(PLUGIN)_datasource.o: $(PLUGIN)_datasource.cpp
-$(PLUGIN)_featureset.o: $(PLUGIN)_featureset.cpp
+	rm -f $(PLUGIN) $(OBJS)
