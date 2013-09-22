@@ -1,1 +1,4 @@
 .DS_Store
+*.o
+/mongodb.input
+node_modules

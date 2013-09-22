@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Map background-color="#ccc" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+    <FontSet name="book-fonts">
+        <Font face-name="DejaVu Sans Book" />
+    </FontSet>
+    <Style name="points_style">
+        <Rule>
+            <MarkersSymbolizer fill="darkgreen" opacity=".7" width="5.5" stroke="lightgreen" stroke-width="3.5" stroke-opacity=".1" placement="point" marker-type="ellipse" allow-overlap="true"/>
+        </Rule>
+        <Rule>
+            <TextSymbolizer fontset-name="book-fonts" size="11" fill="black" placement="point" dy="6">[name]</TextSymbolizer>
+        </Rule>
+    </Style>
+    <Style name="lines_style">
+        <Rule>
+            <LineSymbolizer stroke="#808080" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+        </Rule>
+        <Rule>
+            <TextSymbolizer fontset-name="book-fonts" size="11" fill="black" placement="line" dy="6">[name]</TextSymbolizer>
+        </Rule>
+    </Style>
+    <Style name="polys_style">
+        <Rule>
+            <PolygonSymbolizer gamma=".65" fill="#bbbbbb" />
+        </Rule>
+        <Rule>
+            <TextSymbolizer fontset-name="book-fonts" size="11" fill="black" placement="point" dy="6">[name]</TextSymbolizer>
+        </Rule>
+    </Style>
+    <Layer name="points_layer" status="on" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>points_style</StyleName>
+        <Datasource>
+            <Parameter name="type">mongodb</Parameter>
+            <Parameter name="collection">points</Parameter>
+        </Datasource>
+    </Layer>
+    <Layer name="lines_layer" status="on" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>lines_style</StyleName>
+        <Datasource>
+            <Parameter name="type">mongodb</Parameter>
+            <Parameter name="collection">linestrings</Parameter>
+        </Datasource>
+    </Layer>
+    <Layer name="polys_layer" status="on" srs="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs">
+        <StyleName>polys_style</StyleName>
+        <Datasource>
+            <Parameter name="type">mongodb</Parameter>
+            <Parameter name="collection">polygons</Parameter>
+        </Datasource>
+    </Layer>
+</Map>
