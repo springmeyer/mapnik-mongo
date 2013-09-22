@@ -7,13 +7,11 @@ mapnik.register_datasources("..");
 mapnik.register_fonts("/usr/share/fonts/truetype/ttf-dejavu");
 
 var conf = [
-    { extent: [ -180,   0,   0,  90 ], file: "1.png" },
-    { extent: [    0,   0, 180,  90 ], file: "2.png" },
-    { extent: [ -180, -90,   0,   0 ], file: "3.png" },
-    { extent: [    0, -90, 180,   0 ], file: "4.png" }
+    { extent: [ -180, -90,   0,  90 ], file: "1.png" },
+    { extent: [    0, -90, 180,  90 ], file: "2.png" }
 ];
 
-var map = new mapnik.Map(512, 256);
+var map = new mapnik.Map(256, 256);
 map.load("test.xml", function(err, map) {
     if (err)
         return console.log("style load error:", err.message);
@@ -27,7 +25,7 @@ map.load("test.xml", function(err, map) {
 function render(conf, callback) {
     map.zoomToBox(conf.extent);
 
-    var img = new mapnik.Image(512, 256);
+    var img = new mapnik.Image(256, 256);
     map.render(img, function(err, img) {
         if (err)
             return console.log("rendering error:", err.message);

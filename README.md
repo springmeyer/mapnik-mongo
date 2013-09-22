@@ -40,7 +40,8 @@ CAUTION: notice the Longitude, Latitude order.
 
 Render result for [test/test.js](https://github.com/hamer/mapnik-mongo/blob/master/test/test.js), source shape files in QGis [screenshot](https://raw.github.com/hamer/mapnik-mongo/master/test/qgis_shp_screenshot.png):
 
-![ScreenShot](https://raw.github.com/hamer/mapnik-mongo/master/test/1.png)
+![west](https://raw.github.com/hamer/mapnik-mongo/master/test/1.png)
+![east](https://raw.github.com/hamer/mapnik-mongo/master/test/2.png)
 
 # Setup
 

@@ -102,7 +102,7 @@ std::string mongodb_datasource::json_bbox(const box2d<double> &env) const {
     std::ostringstream lookup;
 
     if (abs(env.maxx() - env.minx()) > 180 ||
-        abs(env.maxy() - env.miny()) > 90)
+        abs(env.maxy() - env.miny()) > 180)
         throw mapnik::datasource_exception("try qo query more than a single hemisphere");
 
     lookup << "{ geometry: { \"$geoIntersects\": { \"$geometry\": { type: \"Polygon\", coordinates: [ [ [ "
